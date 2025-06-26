@@ -6,6 +6,8 @@ import { promisify } from "util";
 import crypto from "crypto";
 
 import { Email } from "./../utils/email";
+import catchAsync from "./../utils/catchAsync";
+import AppError from "../utils/appError";
 
 declare global {
   namespace Express {
@@ -61,37 +63,23 @@ const createSendToken = (
   });
 };
 
-export const signup = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const signup = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const newUser = await User.create({
       Fullname: req.body.Fullname,
       email: req.body.email,
       password: req.body.password,
     });
     createSendToken(newUser, 201, res);
-  } catch (err: any) {
-    console.error("Signup error:", err);
-    res.status(400).json({
-      status: "fail",
-      message: err.message || "An unknown error occurred during signup.",
-    });
   }
-};
+);
 
-export const login = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const login = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      throw new Error("please provide an email and password.");
+      return next(new AppError("Please provide email and password!", 400));
     }
 
     const user = await User.findOne({ email }).select("+password");
@@ -99,24 +87,14 @@ export const login = async (
       !user ||
       !(await user.correctPassword(password, user.password as any))
     ) {
-      throw new Error("Incorrect email or password");
+      return next(new AppError("Incorrect email or password", 401));
     }
     createSendToken(user, 201, res);
-  } catch (err: any) {
-    console.error("login error:", err);
-    res.status(400).json({
-      status: "fail",
-      message: err.message || "An unknown error occurred during login.",
-    });
   }
-};
+);
 
-export const protect = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const protect = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     let token;
 
     if (
@@ -129,11 +107,15 @@ export const protect = async (
     }
 
     if (!token) {
-      throw new Error("You are not loggen in ! Please log in to get access");
+      return next(
+        new AppError("You are not logged in! Please log in to get access.", 401)
+      );
     }
     // const jwtSecret: string = process.env.JWT_SECRET as string;
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECREt is not in the environment variables");
+      return next(
+        new AppError("JWT_SECREt is not in the environment variables.", 401)
+      );
     }
     // token verification
     const decoded = await (promisify(jwt.verify) as any)(
@@ -144,28 +126,30 @@ export const protect = async (
     // check if user still exists
     const currentUser = await User.findById(decoded.id);
     if (!currentUser) {
-      throw new Error("The user belonging to this token does no longer exits");
+      return next(
+        new AppError(
+          "The user belonging to this token does no longer exist.",
+          401
+        )
+      );
     }
 
     // check if user changed password after the token was issued
     if (currentUser.changedPasswordAfter(decoded.iat)) {
-      throw new Error("User recently changed password! Please log in again");
+      return next(
+        new AppError(
+          "User recently changed password! Please log in again.",
+          401
+        )
+      );
     }
 
     // grant access
     req.user = currentUser;
     // res.locals.user = currentUser; if i choose serverside rendering then this
     next();
-  } catch (err: any) {
-    console.error("authentication error:", err);
-    res.status(400).json({
-      status: "fail",
-      message:
-        err.message ||
-        "An unknown error occurred during authenticating the user.",
-    });
   }
-};
+);
 
 export const forgotPassword = async (
   req: Request,
@@ -175,7 +159,7 @@ export const forgotPassword = async (
   // get user based on email
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
-    throw new Error("there is no user with this email address");
+    return next(new AppError("There is no user with email address.", 404));
   }
 
   // generate the random reset token
@@ -198,14 +182,16 @@ export const forgotPassword = async (
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    res.status(400).json({
-      status: "fail",
-      message:
-        err.message || "An unknown error occurred during password reset.",
-    });
+    return next(
+      new AppError(
+        "There was an error sending the email. Try again later!",
+        500
+      )
+    );
   }
 };
 
+// don't have appied global error handling here to have an reference
 export const resetPassword = async (
   req: Request,
   res: Response,
@@ -223,10 +209,7 @@ export const resetPassword = async (
     });
 
     if (!user) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Token is invalid or has expired",
-      });
+      return next(new AppError("Token is invalid or has expired", 400));
     }
 
     user.password = req.body.password;

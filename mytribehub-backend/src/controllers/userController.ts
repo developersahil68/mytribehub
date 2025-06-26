@@ -1,18 +1,18 @@
 import User from "./../models/userModel";
 import { Request, Response, NextFunction } from "express";
 
+import catchAsync from "./../utils/catchAsync";
+import AppError from "../utils/appError";
+
 // Get User
-export const getUser = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const getUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     let query = User.findById(req.params.id);
     const doc = await query;
 
     if (!doc) {
-      throw new Error("No document found with that id");
+      return next(new AppError("No document found with that id", 500));
+      // throw new Error("No document found with that id");
     }
     res.status(200).json({
       status: "success",
@@ -20,11 +20,5 @@ export const getUser = async (
         data: doc,
       },
     });
-  } catch (err: any) {
-    console.error("authentication error:", err);
-    res.status(400).json({
-      status: "fail",
-      message: "An unknown error occurred .",
-    });
   }
-};
+);
