@@ -1,11 +1,24 @@
-import { useState } from "react";
+// import { useState } from "react";
 
 import "./App.css";
 
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LoginForm from "./pages/auth/LoginForm";
+import SignUpForm from "./pages/auth/SignUpForm";
+import UserProvider from "./contexts/userContext";
+
 function App() {
   return (
-    <div className="bg-red-500 text-white p-4 rounded cursor-pointer">
-      Tailwind is working!
+    <div>
+      <UserProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={""} />
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/signup" element={<SignUpForm />} />
+          </Routes>
+        </Router>
+      </UserProvider>
     </div>
   );
 }

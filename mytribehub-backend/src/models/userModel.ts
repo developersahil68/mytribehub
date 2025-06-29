@@ -6,7 +6,7 @@ import { NextFunction } from "express";
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
-  Fullname: string;
+  fullName: string;
   email: string;
   photo?: string;
   password?: string;
@@ -22,7 +22,7 @@ export interface IUser extends Document {
 }
 
 const userSchema = new mongoose.Schema<IUser>({
-  Fullname: {
+  fullName: {
     type: String,
     required: [true, "Please tell us your name"],
   },

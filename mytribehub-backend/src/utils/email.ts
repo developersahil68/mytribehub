@@ -1,10 +1,9 @@
 import nodemailer from "nodemailer";
 import { convert as htmlToText } from "html-to-text";
 
-
 interface IUserForEmail {
   email: string;
-  Fullname?: string;
+  fullName?: string;
 }
 
 export class Email {
@@ -15,7 +14,7 @@ export class Email {
 
   constructor(user: IUserForEmail, url: string) {
     this.to = user.email;
-    this.firstName = user.Fullname ? user.Fullname.split(" ")[0] : "User";
+    this.firstName = user.fullName ? user.fullName.split(" ")[0] : "User";
     this.url = url;
     this.from = `MyTribeHub <${process.env.EMAIL_FROM}>`;
   }
