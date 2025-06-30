@@ -1,9 +1,85 @@
 import User from "./../models/userModel";
 import { Request, Response, NextFunction } from "express";
+import multer from "multer";
+import sharp from "sharp";
 
 import catchAsync from "./../utils/catchAsync";
 import AppError from "../utils/appError";
 
+//image uplodation
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req: Request, file: Express.Multer.File, cb: any) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new AppError("Not an image ! Please upload only images", 400), false);
+  }
+};
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+export const uploadUserPhoto = upload.single("photo");
+export const resizeUserPhoto = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) return next();
+
+    req.file.filename = `user-${req.user?.id}-${Date.now()}.jpeg`;
+
+    await sharp(req.file.buffer)
+      .resize(500, 500)
+      .toFormat("jpeg")
+      .jpeg({ quality: 90 })
+      .toFile(`public/img/users/${req.file.filename}`);
+
+    next();
+  }
+);
+
+const filterObj = (
+  obj: Record<string, any>,
+  ...allowedFields: string[]
+): Record<string, any> => {
+  const newObj: Record<string, any> = {};
+
+  Object.keys(obj).forEach((el) => {
+    if (allowedFields.includes(el)) newObj[el] = obj[el];
+  });
+  return newObj;
+};
+
+// update me
+export const updateMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (req.body?.password) {
+      return next(new AppError("this route is not for password updates", 400));
+    }
+
+    // filtering the fields that we dont want to update
+    const filteredBody = filterObj(req.body, "fullName", "email");
+
+    if (req.file) filteredBody.photo = req.file.filename;
+
+    //updating user doc
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user?.id,
+      filteredBody,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+    res.status(200).json({
+      status: "success",
+      data: {
+        user: updatedUser,
+      },
+    });
+  }
+);
 // GEt me
 export const getMe = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
