@@ -6,7 +6,7 @@ import sharp from "sharp";
 import catchAsync from "./../utils/catchAsync";
 import AppError from "../utils/appError";
 
-//image uplodation
+//image uploading
 
 const multerStorage = multer.memoryStorage();
 
