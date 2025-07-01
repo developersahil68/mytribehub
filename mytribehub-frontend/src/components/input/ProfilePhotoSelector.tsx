@@ -37,6 +37,7 @@ const ProfilePhotoSelector: React.FC<ProfilePhotoSelectorProps> = ({
     <div className="flex justify-center mb-6">
       <input
         type="file"
+        name="photo"
         accept="image/*"
         ref={inputRef}
         onChange={handleImageChange}

@@ -16,7 +16,7 @@ import {
 
 const router = express.Router();
 
-router.post("/signup", signup);
+router.post("/signup", uploadUserPhoto , resizeUserPhoto ,  signup);
 router.post("/login", login);
 
 router.post("/forgotPassword", forgotPassword);

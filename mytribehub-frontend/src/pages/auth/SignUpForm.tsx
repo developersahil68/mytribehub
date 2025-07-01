@@ -57,19 +57,25 @@ const SignUpForm = () => {
     // Sign up Api
 
     try {
-      // upload image if present
+      // create a formdata object
+      const formData = new FormData();
 
-      //   if (profilePic) {
-      //     const imgUploadRes = await uploadImage(profilePic);
-      //     profileImageUrl = imgUploadRes.imageUrl || "";
-      //   }
-      const response = await axiosInstance.post(API_PATHS.AUTH.signup, {
-        fullName,
-        username,
-        email,
-        password,
-        // profileImageUrl,
-      });
+      // appending all text fields
+
+      formData.append("fullName", fullName);
+      formData.append("email", email);
+      formData.append("username", username);
+      formData.append("password", password);
+
+      // 3. Append the profile picture if selected
+      if (profilePic) {
+        formData.append("photo", profilePic);
+      }
+      const response = await axiosInstance.post(
+        API_PATHS.AUTH.signup,
+        formData
+      );
+
       const { user } = response.data.data;
 
       updateUser(user);

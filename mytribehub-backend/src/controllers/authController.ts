@@ -65,12 +65,23 @@ const createSendToken = (
 
 export const signup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const newUser = await User.create({
-      fullName: req.body.fullName,
-      email: req.body.email,
-      password: req.body.password,
-    });
-    createSendToken(newUser, 201, res);
+    const { fullName, email, password } = req.body;
+
+    if (!fullName || !email || !password) {
+      return next(
+        new AppError("Please provide full name, email and password, .", 400)
+      );
+    }
+
+    const newUser: any = {
+      fullName,
+      email,
+      password,
+      photo: req.file ? `public/img/users/${req.file.filename}` : undefined,
+    };
+    // 3. Create the new user
+    const user = await User.create(newUser);
+    createSendToken(user, 201, res);
   }
 );
 
